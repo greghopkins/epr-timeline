@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>US EPR Legislation Timeline</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; color: #1e293b; background: #fff; }
+  .container { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+  h1 { font-size: 26px; font-weight: 700; margin-bottom: 2px; }
+  .subtitle { color: #64748b; font-size: 14px; margin-bottom: 20px; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 0; border-bottom: 2px solid #e2e8f0; margin-bottom: 20px; }
+  .tab { padding: 10px 24px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; background: transparent; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+  .tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+  .tab:hover:not(.active) { color: #475569; }
+
+  /* Stats */
+  .stats { display: flex; gap: 14px; margin-bottom: 18px; flex-wrap: wrap; }
+  .stat-card { flex: 1; min-width: 140px; padding: 14px 16px; border-radius: 12px; text-align: center; }
+  .stat-num { font-size: 30px; font-weight: 800; }
+  .stat-label { font-size: 12px; font-weight: 500; margin-top: 2px; }
+
+  /* Map */
+  .map-container { background: #f8fafc; border-radius: 14px; border: 1px solid #e2e8f0; padding: 12px; margin-bottom: 14px; position: relative; }
+  .state-path { transition: opacity 0.15s, stroke-width 0.15s; cursor: default; }
+  .state-path.epr { cursor: pointer; }
+  .state-path.epr:hover { opacity: 0.85; stroke-width: 2px; }
+  .state-path.selected { stroke: #0f172a !important; stroke-width: 2.5px !important; }
+  .state-label { font-size: 10px; font-weight: 700; fill: #fff; pointer-events: none; text-anchor: middle; paint-order: stroke; stroke: rgba(0,0,0,0.3); stroke-width: 2.5px; }
+  .state-label.dark-text { fill: #475569; stroke: rgba(255,255,255,0.7); }
+
+  /* Legend */
+  .map-legend { display: flex; gap: 20px; justify-content: center; margin-bottom: 16px; font-size: 12px; color: #64748b; flex-wrap: wrap; align-items: center; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-swatch { width: 16px; height: 16px; border-radius: 4px; display: inline-block; }
+
+  /* Tooltip */
+  .tooltip { position: absolute; pointer-events: none; background: #fff; border-radius: 10px; padding: 12px 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); border: 1.5px solid #e2e8f0; max-width: 280px; z-index: 10; opacity: 0; transition: opacity 0.15s; }
+  .tooltip.visible { opacity: 1; }
+  .tooltip-state { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; color: #fff; display: inline-block; }
+  .tooltip-title { font-size: 13px; font-weight: 600; color: #0f172a; margin: 4px 0 2px; }
+  .tooltip-detail { font-size: 12px; color: #475569; line-height: 1.4; }
+
+  /* State grid */
+  .state-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; margin-top: 18px; }
+  .state-grid-title { font-size: 15px; font-weight: 700; margin: 18px 0 10px; }
+  .grid-card { padding: 10px 14px; border-radius: 9px; cursor: pointer; background: #fff; border: 1.5px solid #e2e8f0; transition: all 0.15s; }
+  .grid-card:hover { border-color: #94a3b8; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .grid-card.selected { border-color: var(--accent); background: var(--accent-bg); }
+  .grid-card .pill { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 4px; color: #fff; }
+  .grid-card .status { font-size: 11px; font-weight: 600; }
+  .grid-card .detail { font-size: 11px; color: #475569; line-height: 1.4; margin-top: 4px; }
+
+  /* Filters */
+  .filters { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+  .filter-btn { padding: 6px 14px; border-radius: 20px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; }
+
+  /* Timeline */
+  .year-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .year-label { font-size: 20px; font-weight: 700; color: #0f172a; }
+  .year-divider { flex: 1; height: 1px; background: #e2e8f0; }
+  .year-count { font-size: 12px; color: #94a3b8; font-weight: 500; }
+  .year-section { margin-bottom: 32px; }
+  .timeline-track { position: relative; padding-left: 28px; }
+  .timeline-line { position: absolute; left: 9px; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, #cbd5e1, #e2e8f0); }
+  .event-item { position: relative; margin-bottom: 14px; cursor: pointer; }
+  .event-dot { position: absolute; left: -23px; top: 14px; width: 14px; height: 14px; border-radius: 50%; border: 3px solid; transition: all 0.2s; z-index: 1; }
+  .event-dot.past { background: var(--dot-color); }
+  .event-dot.future { background: #fff; }
+  .event-card { border-radius: 10px; padding: 12px 16px; border: 1px solid #e2e8f0; background: #fff; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+  .event-card:hover { background: #f8fafc; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .event-card.selected { border-color: var(--card-accent); }
+  .event-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+  .event-state-pill { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; color: #fff; }
+  .event-date { font-size: 12px; color: #94a3b8; font-weight: 500; }
+  .event-upcoming { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: #fef3c7; color: #92400e; }
+  .event-category { font-size: 10px; font-weight: 500; padding: 1px 6px; border-radius: 4px; margin-left: auto; }
+  .event-title { font-size: 14px; font-weight: 600; color: #0f172a; }
+  .event-desc { margin-top: 8px; font-size: 13px; color: #475569; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 8px; }
+  .event-desc a { position: relative; z-index: 2; }
+  .event-citation { margin-top: 8px; padding: 8px 12px; background: #f8fafc; border-left: 3px solid #cbd5e1; border-radius: 0 6px 6px 0; font-size: 12px; color: #475569; line-height: 1.5; font-style: italic; }
+  .citation-label { font-style: normal; font-weight: 600; color: #64748b; font-size: 11px; }
+
+  /* Footer */
+  .today-bar { text-align: center; margin: 24px 0 16px; padding: 10px 16px; background: #f1f5f9; border-radius: 8px; font-size: 13px; color: #475569; }
+  .today-bar strong { color: #0f172a; }
+  .bottom-legend { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; font-size: 12px; color: #64748b; align-items: center; }
+  .dot-legend { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>US EPR Legislation Timeline</h1>
+  <p class="subtitle">Extended Producer Responsibility for packaging — enacted laws, milestones & proposals</p>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="map">Map View</button>
+    <button class="tab" data-tab="timeline">Timeline</button>
+  </div>
+
+  <div id="map-view">
+    <div class="stats">
+      <div class="stat-card" style="background:#dbeafe"><div class="stat-num" style="color:#2563eb">7</div><div class="stat-label" style="color:#1e40af">States with enacted EPR</div></div>
+      <div class="stat-card" style="background:#f0fdf4"><div class="stat-num" style="color:#15803d">6</div><div class="stat-label" style="color:#166534">States with CAA as PRO</div></div>
+      <div class="stat-card" style="background:#fef3c7"><div class="stat-num" style="color:#d97706">5</div><div class="stat-label" style="color:#92400e">States with proposals</div></div>
+      <div class="stat-card" style="background:#d1fae5"><div class="stat-num" style="color:#059669" id="upcoming-count">10</div><div class="stat-label" style="color:#065f46">Upcoming events</div></div>
+    </div>
+    <div class="map-container">
+      <div id="map"></div>
+      <div class="tooltip" id="tooltip"></div>
+    </div>
+    <div class="map-legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:repeating-linear-gradient(45deg,#2563eb,#2563eb 3px,#16a34a 3px,#16a34a 5px)"></span> Enacted — CAA as PRO</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#2563eb;background-image:radial-gradient(rgba(255,255,255,0.35) 1.5px, transparent 1.5px);background-size:6px 6px"></span> Enacted — PRO pending</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#d97706"></span> Proposed / Pre-EPR</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#e2e8f0"></span> No EPR activity</div>
+    </div>
+    <div style="text-align:center;font-size:11px;color:#94a3b8;margin-bottom:14px">Hover or click highlighted states for details</div>
+    <div class="state-grid-title">EPR States at a Glance <span style="font-size:12px;font-weight:400;color:#64748b;margin-left:8px">Circular Action Alliance (CAA) is the designated PRO in 6 of 7 enacted states</span></div>
+    <div class="state-grid" id="state-grid"></div>
+  </div>
+
+  <div id="timeline-view" class="hidden">
+    <div class="filters" id="filters"></div>
+    <div id="timeline-content"></div>
+    <div class="today-bar">Today: March 12, 2026 — <strong>7 states</strong> have enacted packaging EPR laws, with <strong id="upcoming-count2">10</strong> upcoming events</div>
+    <div class="bottom-legend">
+      <span class="legend-item"><span class="dot-legend" style="background:#2563eb"></span> Law enacted</span>
+      <span class="legend-item"><span class="dot-legend" style="background:#059669"></span> Milestone</span>
+      <span class="legend-item"><span class="dot-legend" style="background:#7c3aed"></span> Producer requirement</span>
+      <span class="legend-item"><span class="dot-legend" style="background:#d97706"></span> Proposed</span>
+      <span class="legend-item"><span class="dot-legend" style="background:#fff;border:2px solid #64748b"></span> Upcoming</span>
+      <span style="font-size:11px;color:#94a3b8">Click any event for details</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──
+const eprStates = {
+  "Maine":          { abbr:"ME", status:"enacted",  year:2021, label:"Enacted 2021", detail:"First US state with packaging EPR. Full implementation by 2027.", pro:"pending", proNote:"CAA has applied; selection expected spring 2026" },
+  "Oregon":         { abbr:"OR", status:"enacted",  year:2021, label:"Enacted 2021", detail:"Program launched Jul 2025. Penalties up to $25K/day.", pro:"caa", proNote:"CAA is the designated PRO" },
+  "Colorado":       { abbr:"CO", status:"enacted",  year:2022, label:"Enacted 2022", detail:"Fee payments began Jan 2026.", pro:"caa", proNote:"CAA is the designated PRO" },
+  "California":     { abbr:"CA", status:"enacted",  year:2022, label:"Enacted 2022", detail:"SB 54 — most ambitious US EPR law. Full fees in 2027.", pro:"caa", proNote:"CAA is the designated PRO" },
+  "Minnesota":      { abbr:"MN", status:"enacted",  year:2024, label:"Enacted 2024", detail:"Full implementation expected 2029.", pro:"caa", proNote:"CAA is the designated PRO" },
+  "Maryland":       { abbr:"MD", status:"enacted",  year:2025, label:"Enacted 2025", detail:"Allows multiple PROs. Payments ~2028.", pro:"caa", proNote:"CAA is the designated PRO (multiple PROs allowed)" },
+  "Washington":     { abbr:"WA", status:"enacted",  year:2025, label:"Enacted 2025", detail:"Recycling Reform Act. Full ops by 2030.", pro:"caa", proNote:"CAA announced as designated PRO on Mar 4, 2026" },
+  "Rhode Island":   { abbr:"RI", status:"proposed", year:2025, label:"Pre-EPR 2025", detail:"Needs assessment law signed. Report due Dec 2026.", pro:"none", proNote:"No PRO — pre-EPR assessment stage" },
+  "New Hampshire":  { abbr:"NH", status:"proposed", year:2026, label:"Bill 2026",    detail:"EPR bill introduced in 2026 session.", pro:"none", proNote:"No PRO — legislation pending" },
+  "Wisconsin":      { abbr:"WI", status:"proposed", year:2026, label:"Bill 2026",    detail:"EPR bill introduced in 2026 session.", pro:"none", proNote:"No PRO — legislation pending" },
+  "Georgia":        { abbr:"GA", status:"proposed", year:2026, label:"Bill 2026",    detail:"HB 1237 introduced Feb 2026.", pro:"none", proNote:"No PRO — legislation pending" },
+  "New York":       { abbr:"NY", status:"proposed", year:2026, label:"Expected 2026",detail:"Packaging Reduction Act reintroduction planned.", pro:"none", proNote:"No PRO — legislation pending" },
+};
+
+const stateAbbrs = {
+  "Alabama":"AL","Alaska":"AK","Arizona":"AZ","Arkansas":"AR","California":"CA","Colorado":"CO",
+  "Connecticut":"CT","Delaware":"DE","Florida":"FL","Georgia":"GA","Hawaii":"HI","Idaho":"ID",
+  "Illinois":"IL","Indiana":"IN","Iowa":"IA","Kansas":"KS","Kentucky":"KY","Louisiana":"LA",
+  "Maine":"ME","Maryland":"MD","Massachusetts":"MA","Michigan":"MI","Minnesota":"MN",
+  "Mississippi":"MS","Missouri":"MO","Montana":"MT","Nebraska":"NE","Nevada":"NV",
+  "New Hampshire":"NH","New Jersey":"NJ","New Mexico":"NM","New York":"NY",
+  "North Carolina":"NC","North Dakota":"ND","Ohio":"OH","Oklahoma":"OK","Oregon":"OR",
+  "Pennsylvania":"PA","Rhode Island":"RI","South Carolina":"SC","South Dakota":"SD",
+  "Tennessee":"TN","Texas":"TX","Utah":"UT","Vermont":"VT","Virginia":"VA","Washington":"WA",
+  "West Virginia":"WV","Wisconsin":"WI","Wyoming":"WY",
+};
+
+const statusColors = {
+  enacted:  { fill:"#2563eb", hover:"#1d4ed8", bg:"#dbeafe" },
+  proposed: { fill:"#d97706", hover:"#b45309", bg:"#fef3c7" },
+};
+
+const categoryConfig = {
+  enacted:   { color:"#2563eb", bg:"#dbeafe", label:"Law Enacted" },
+  milestone: { color:"#059669", bg:"#d1fae5", label:"Implementation Milestone" },
+  producer:  { color:"#7c3aed", bg:"#ede9fe", label:"Producer Requirement" },
+  proposed:  { color:"#d97706", bg:"#fef3c7", label:"Proposed / Pre-EPR" },
+};
+
+const stateTagColors = {
+  ME:"#6366f1",OR:"#ec4899",CA:"#f59e0b",CO:"#10b981",MN:"#8b5cf6",MD:"#ef4444",
+  WA:"#06b6d4",GA:"#f97316",RI:"#84cc16",NH:"#14b8a6",WI:"#a855f7",NY:"#e11d48",
+  Multi:"#6b7280","MD/WA":"#64748b",
+};
+
+const events = [
+  // ── Laws enacted ──
+  {date:"2021-07-12",label:"Maine EPR Law Enacted",description:"Governor Mills signs LD 1541, making Maine the first US state to enact packaging EPR legislation. Full implementation expected by 2027.",category:"enacted",state:"ME",
+    source:"https://www.maine.gov/dep/waste/recycle/epr.html",sourceName:"Maine DEP",
+    citation:"Gov. Janet Mills signed LD 1541 into law on July 12, 2021, making Maine the first state to pass an extended producer responsibility (EPR) law for packaging. Under the law, packaging producers will be financially responsible for funding recycling of their products."},
+  {date:"2021-08-06",label:"Oregon EPR Law Enacted",description:"Oregon signs the Recycling Modernization Act (SB 582), becoming the second state with packaging EPR.",category:"enacted",state:"OR",
+    source:"https://www.oregon.gov/deq/recycling/pages/producers-of-covered-products.aspx",sourceName:"Oregon DEQ",
+    citation:"Kate Brown signed SB 582, known as the Plastic Pollution and Recycling Modernization Act, into law Aug. 6. SB 582 makes Oregon the second state to pass an extended producer responsibility (EPR) law for packaging."},
+  {date:"2022-06-03",label:"Colorado EPR Law Enacted",description:"Colorado signs the Producer Responsibility Program for Statewide Recycling Act (HB 22-1355).",category:"enacted",state:"CO",
+    source:"https://cdphe.colorado.gov/hm/epr-program",sourceName:"Colorado DPHE",
+    citation:"Governor Jared Polis signed the Producer Responsibility Program for Statewide Recycling Act (HB22-1355) into law on June 3, 2022. Colorado became the third state to pass extended producer responsibility (EPR) legislation, following Maine and Oregon that passed legislation in 2021."},
+  {date:"2022-06-30",label:"California SB 54 Signed",description:"California enacts the Plastic Pollution Prevention and Packaging Producer Responsibility Act.",category:"enacted",state:"CA",
+    source:"https://calrecycle.ca.gov/packaging/packaging-epr/",sourceName:"CalRecycle",
+    citation:"On June 30, 2022, Governor Gavin Newsom signed SB 54 (Allen, 2022) into law to address the impacts of single-use packaging and plastic food service ware. SB 54 is the most ambitious extended producer responsibility bill for packaging in the U.S."},
+  {date:"2024-05-21",label:"Minnesota EPR Law Enacted",description:"Governor Walz signs the Packaging Waste and Cost Reduction Act. Full implementation expected by 2029.",category:"enacted",state:"MN",
+    source:"https://www.pca.state.mn.us/air-water-land-climate/extended-producer-responsibility-for-packaging",sourceName:"Minnesota PCA",
+    citation:"On May 21, 2024, Minnesota Governor Tim Walz signed the Packaging Waste and Cost Reduction Act. Minnesota is the fifth state to enact laws implementing packaging EPR rules, alongside Oregon, Maine, Colorado, and California."},
+  {date:"2025-05-13",label:"Maryland EPR Law Enacted",description:"Maryland signs SB 901 into law, uniquely allowing multiple PROs to operate concurrently.",category:"enacted",state:"MD",
+    source:"https://www.packagingdive.com/news/maryland-paper-packaging-epr-wes-moore-signs-sb-901/747133/",sourceName:"Packaging Dive",
+    citation:"On May 13, 2025, Maryland Governor Wes Moore signed SB 901, making Maryland the sixth state to adopt packaging Extended Producer Responsibility (EPR). The law covers certain packaging and paper products, including beverage containers."},
+  {date:"2025-05-17",label:"Washington EPR Law Enacted",description:"Washington signs the Recycling Reform Act (SB 5284). Full operations expected by 2030.",category:"enacted",state:"WA",
+    source:"https://ecology.wa.gov/waste-toxics/reducing-recycling-waste/our-recycling-programs/recycling-reform-act",sourceName:"WA Dept. of Ecology",
+    citation:"On May 17, 2025, Governor Bob Ferguson signed SB 5284, known as the Recycling Reform Act, into law—calling it the \"biggest overhaul of our recycling system in decades.\" Washington is now the seventh U.S. state to adopt a packaging extended producer responsibility (EPR) law."},
+
+  // ── Proposed / Pre-EPR ──
+  {date:"2025-06-30",label:"Rhode Island: Needs Assessment Law",description:"Rhode Island signs H 6207, requiring a statewide recycling needs assessment as a pre-EPR step. Report due Dec 1, 2026.",category:"proposed",state:"RI",
+    source:"https://www.wastedive.com/news/rhode-island-study-bill-recycling-epr-bottle-bill-to-governor/751734/",sourceName:"Waste Dive",
+    citation:"House Bill No. 6207 SUB A as amended is an act relating to health and safety regarding the statewide implementation analysis for a beverage container recycling program. The Department of Environmental Management (DEM) is charged with assembling an advisory council and commissioning a statewide needs assessment to determine the infrastructure, policy, and programmatic requirements necessary to support a statewide beverage recycling program."},
+  {date:"2026-01-15",label:"New Hampshire: EPR Bill Introduced",description:"New Hampshire introduces HB 6688, a bill relative to recycling of film plastics. Sponsors serve on the House Environment and Agriculture Committee.",category:"proposed",state:"NH",
+    source:"https://newhampshirebulletin.com/briefs/should-nh-put-responsibility-on-manufacturers-for-waste-impacts-state-may-explore-it/",sourceName:"NH Bulletin",
+    citation:"Unable to locate specific information about New Hampshire HB 6688 in publicly available legislative databases. New Hampshire has introduced HB 1789 as its current EPR legislation for the 2026 session, which proposes to establish a packaging EPR program."},
+  {date:"2025-12-17",label:"Wisconsin: EPR Bills Introduced",description:"Wisconsin introduces SB 778 / AB 772, creating a packaging reduction and recycling program with 10–50% packaging reduction targets over 10 years.",category:"proposed",state:"WI",
+    source:"https://docs.legis.wisconsin.gov/2025/proposals/sb778",sourceName:"WI Legislature",
+    citation:"In December 2025, the State Senate and Assembly both introduced identical packaging EPR bills (SB 778 and AB 772). Producers would be required to reduce the amount of packaging used by 10% after two years, increasing to 20% after four years, 30% after six years, 40% after eight years and 50% after 10 years."},
+  {date:"2026-02-06",label:"Georgia: HB 1237 Introduced",description:"Georgia introduces the Pollution Prevention and Producer Responsibility Act of 2026, covering packaging, paper products, and beverage containers.",category:"proposed",state:"GA",
+    source:"https://regask.com/georgia-house-bill-1237-proposes-extended-producer-responsibility-for-packaging-and-beverage-containers/",sourceName:"RegASK",
+    citation:"Georgia District Rep. 75 Eric Bell, D-Jonesboro, recently introduced House Bill 1237, the Pollution Prevention and Producer Responsibility Act of 2026, which would establish a comprehensive producer responsibility framework for packaging, paper products and beverage containers."},
+  {date:"2026-01-08",label:"New York: EPR Bill Reintroduced",description:"S1464 / A1749, the Packaging Reduction & Recycling Infrastructure Act, reintroduced. Passed Senate May 2025; stalled in Assembly as of Jan 2026.",category:"proposed",state:"NY",
+    source:"https://www.nysenate.gov/legislation/bills/2025/S1464",sourceName:"NY Senate",
+    citation:"S1464 was introduced in the New York State Senate on January 10, 2025, to enact the packaging reduction and recycling infrastructure act. The bill would cut single-use packaging waste by 30%, phase out some of the most toxic chemicals and materials in packaging, and shift costs off taxpayers and onto corporations."},
+
+  // ── Implementation milestones ──
+  {date:"2025-07-01",label:"Oregon: Program Launches",description:"Oregon's EPR program becomes operational. PRO membership fees due; enforcement begins with penalties up to $25,000/day for noncompliance.",category:"milestone",state:"OR",
+    source:"https://www.oregon.gov/deq/recycling/pages/producers-of-covered-products.aspx",sourceName:"Oregon DEQ",
+    citation:"Once a matter is referred, DEQ may initiate enforcement actions, including the assessment of civil penalties of up to $25,000 per day. (Source: Legal analysis of Oregon's Plastic Pollution and Recycling Modernization Act)"},
+  {date:"2026-01-01",label:"Colorado: Program Plan Approved",description:"Colorado DPHE approved CAA's program plan on Dec 9, 2025, with fee obligations beginning Jan 1, 2026.",category:"milestone",state:"CO",
+    source:"https://cdphe.colorado.gov/hm/epr-program",sourceName:"Colorado DPHE",
+    citation:"On December 9, the Colorado Department of Public Health & Environment (CDPHE) approved Circular Action Alliance's five-year Program Plan to administer Colorado's extended producer responsibility (EPR) law as the designated producer responsibility organization for packaging and paper. (Source: Colorado DPHE/CAA announcement)"},
+  {date:"2026-02-06",label:"Oregon: Federal Court Issues Preliminary Injunction",description:"US District Court grants preliminary injunction to National Association of Wholesaler-Distributors (NAW), blocking EPR enforcement against NAW members. Court found 'serious questions' on Due Process and Dormant Commerce Clause. Non-NAW producers remain subject to full enforcement. Trial set Jul 13, 2026.",category:"milestone",state:"OR",
+    source:"https://www.naw.org/naw-wins-preliminary-injunction-against-oregons-epr-law/",sourceName:"NAW",
+    citation:"On February 6, 2026, the United States District Court for the District of Oregon granted a preliminary injunction preventing the Oregon Department of Environmental Quality (DEQ) from enforcing Oregon's Plastic Pollution and Recycling Modernization Act (RMA) against the National Association of Wholesaler-Distributors (NAW) and its members. (Source: NAW/DLA Piper)"},
+  {date:"2026-03-02",label:"California: Textile EPR PRO Selected",description:"CalRecycle approves Landbell USA as PRO for the Responsible Textile Recovery Act (SB 707) — the first textile-specific EPR PRO in the US. All textile producers must join by Jul 1, 2026. Landbell plans to coordinate with CAA for shared infrastructure.",category:"milestone",state:"CA",
+    source:"https://calrecycle.ca.gov/epr/textiles/textileproapp/",sourceName:"CalRecycle",
+    citation:"On February 27, 2026, CalRecycle approved Landbell USA as the PRO to carry out the requirements of the Responsible Textile Recovery Act. On March 1, CalRecycle named Landbell USA to manage implementation of the legislation. (Source: CalRecycle/Resource Recycling)"},
+  {date:"2026-03-04",label:"Washington: CAA Designated as PRO",description:"WA Dept. of Ecology announces Circular Action Alliance as the designated PRO for the Recycling Reform Act.",category:"milestone",state:"WA",
+    source:"https://ecology.wa.gov/waste-toxics/reducing-recycling-waste/our-recycling-programs/recycling-reform-act",sourceName:"WA Dept. of Ecology",
+    citation:"On March 4, 2026, the Washington Department of Ecology announced Circular Action Alliance (CAA) as the Producer Responsibility Organization (PRO) to lead the implementation of the Recycling Reform Act, the state's Extended Producer Responsibility (EPR) law for residential paper and product packaging. (Source: Washington Department of Ecology/CAA announcement)"},
+  {date:"2025-03-07",label:"California: Newsom Directs SB 54 Rulemaking Restart",description:"Governor Newsom orders CalRecycle to restart the SB 54 rulemaking process due to concerns about potential costs to small businesses and consumers. Draft EPR program language is rejected.",category:"milestone",state:"CA",
+    source:"https://www.klgates.com/Updates-on-SB-54-CalRecycle-to-Take-a-Second-Stab-at-Implementing-Regulations-4-1-2025",sourceName:"K&L Gates",
+    citation:"On March 7, 2025, Governor Gavin Newsom directed CalRecycle back to the drawing board on proposed regulations to implement SB 54, leading to a new rulemaking process."},
+  {date:"2026-01-09",label:"California: CalRecycle Withdraws SB 54 Draft Regulations",description:"CalRecycle officially withdraws proposed SB 54 regulations from the Office of Administrative Law for revisions, primarily around food and agricultural packaging clarity. A 15-day public comment period followed (Jan 29 – Feb 13, 2026). Statutory targets remain unchanged.",category:"milestone",state:"CA",
+    source:"https://resource-recycling.com/recycling/2026/01/12/calrecycle-withdraws-proposed-regs-for-sb-54/",sourceName:"Resource Recycling",
+    citation:"On January 9, 2026, CalRecycle withdrew its proposed SB 54 regulations from the Office of Administrative Law's review. The agency plans to work on revisions to improve clarity, primarily around food and agricultural packaging, and will reopen a 15-day public comment period, but statutory deadlines will remain the same."},
+  {date:"2027-01-01",label:"California: SB 54 Source Reduction Target — 10%",description:"SB 54 requires producers to reduce single-use plastic packaging and plastic food service ware by at least 10% (by weight) compared to the 2023 baseline. First enforceable source reduction milestone.",category:"milestone",state:"CA",
+    source:"https://calrecycle.ca.gov/packaging/packaging-epr/",sourceName:"CalRecycle",
+    citation:"SB 54 requires a 25% plastic reduction: 10% by 2027, 20% by 2030, and 25% by 2032. Reduction may come from direct elimination of plastic packaging or shifting to reuse or refill systems."},
+  {date:"2028-01-01",label:"California: SB 54 Recycling Rate Target — 30%",description:"SB 54 requires that at least 30% of single-use plastic packaging and food service ware is recycled. First enforceable recycling rate milestone.",category:"milestone",state:"CA",
+    source:"https://calrecycle.ca.gov/packaging/packaging-epr/",sourceName:"CalRecycle",
+    citation:"Plastic recycling rates under SB 54 must reach 30% by 2028, 40% by 2030, and 65% by 2032."},
+  {date:"2030-01-01",label:"California: SB 54 Targets — 20% Reduction, 40% Recycling",description:"SB 54 requires 20% source reduction in single-use plastic packaging and a 40% recycling rate. Second-phase targets.",category:"milestone",state:"CA",
+    source:"https://calrecycle.ca.gov/packaging/packaging-epr/",sourceName:"CalRecycle",
+    citation:"Single-use plastic packaging and single-use plastic food ware must be reduced by 20% by 2030. Plastic recycling rates must reach 40% by 2030."},
+  {date:"2032-01-01",label:"California: SB 54 Final Targets — 25% Reduction, 65% Recycling, 100% Recyclable/Compostable",description:"SB 54's ultimate deadline: 100% of single-use packaging and plastic food service ware must be recyclable or compostable. Plastic source reduction must reach 25% and recycling rate 65%. The most ambitious packaging sustainability mandate in the US.",category:"milestone",state:"CA",
+    source:"https://calrecycle.ca.gov/packaging/packaging-epr/",sourceName:"CalRecycle",
+    citation:"By 2032, SB 54 requires producers to ensure that 100% of single-use packaging and single-use plastic food service ware sold in the state is recyclable or compostable, 65% of single-use plastic packaging is recycled, and there is a 25% reduction compared to 2023."},
+  {date:"2026-04-01",label:"Maine: PRO Selection Expected",description:"Maine DEP expected to select and contract with a Stewardship Organization in spring 2026. CAA has applied and is widely expected to be selected.",category:"milestone",state:"ME",
+    source:"https://www.maine.gov/dep/waste/recycle/epr.html",sourceName:"Maine DEP",
+    citation:"Maine's Department of Environmental Protection (DEP) expects to select and contract with a Stewardship Organization in April 2026. DEP anticipates that producers will need to register with and provide supply reports to the selected Stewardship Organization in May 2026. (Source: Maine DEP)"},
+  {date:"2027-01-01",label:"Maine: Full Implementation Target",description:"Maine's Stewardship Program for Packaging expected to be fully implemented.",category:"milestone",state:"ME",
+    source:"https://www.maine.gov/dep/waste/recycle/epr.html",sourceName:"Maine DEP",
+    citation:"The program will be fully operational in 2027, and producers should aim to meet the January 1, 2027 statutory deadline. (Source: Maine DEP)"},
+  {date:"2026-08-01",label:"California: SB 54 Regulations Finalization Deadline",description:"CalRecycle's statutory deadline to finalize permanent implementing regulations for SB 54. Following the Jan 2026 withdrawal and Feb 2026 comment period, the agency must adopt final rules by this date.",category:"milestone",state:"CA",
+    source:"https://resource-recycling.com/recycling/2026/01/12/calrecycle-withdraws-proposed-regs-for-sb-54/",sourceName:"Resource Recycling",
+    citation:"CalRecycle has until August 2026 to finalize its revised regulations. The agency withdrew its proposed regulations on January 9, 2026 for revisions focused on food and agricultural packaging clarity."},
+  {date:"2028-01-01",label:"Minnesota: Stewardship Plan Due",description:"Minnesota's PRO Stewardship Plan is due to the state.",category:"milestone",state:"MN",
+    source:"https://www.pca.state.mn.us/air-water-land-climate/extended-producer-responsibility-for-packaging",sourceName:"Minnesota PCA",
+    citation:"The Producer Responsibility Organization (PRO) must complete the stewardship plan by October 1, 2028. January 1, 2029 is when producers must have executed an agreement with the PRO to comply with an approved stewardship plan in order to continue to introduce covered materials. (Source: Minnesota PCA/Minnesota Statutes 115A.1443)"},
+  {date:"2029-02-01",label:"Minnesota: Full Implementation",description:"Program fully operational. Producer cost-sharing phases in: 50% initially, rising to 75% (2029) and 90% (2030+).",category:"milestone",state:"MN",
+    source:"https://www.pca.state.mn.us/air-water-land-climate/extended-producer-responsibility-for-packaging",sourceName:"Minnesota PCA",
+    citation:"Producers will be required to pay 50% of net recycling cost by February 1, 2029; 75% by February 1, 2030; and 90% by February 1, 2031, and each year thereafter. (Source: Minnesota PCA/Minnesota EPR law)"},
+  {date:"2030-01-01",label:"Washington: Full Operations",description:"Washington's Recycling Reform Act expected to become fully operational. After Mar 2029, producers not in a PRO face sales restrictions.",category:"milestone",state:"WA",
+    source:"https://ecology.wa.gov/waste-toxics/reducing-recycling-waste/our-recycling-programs/recycling-reform-act",sourceName:"WA Dept. of Ecology",
+    citation:"January 1, 2030 marks full implementation of the approved program. Starting January 1, 2030, local solid waste programs must provide curbside collection of source-separated recyclables, include covered packaging and paper products on the statewide recycling list, and follow PRO-established service standards. (Source: Washington Department of Ecology)"},
+
+  // ── Producer requirements: Registration ──
+  {date:"2024-10-01",label:"Colorado: Producer Registration Deadline",description:"Producers required to register with CAA (the PRO) for Colorado's program by this date.",category:"producer",state:"CO",
+    source:"https://cdphe.colorado.gov/hm/epr-program",sourceName:"Colorado DPHE",
+    citation:"Producers subject to Colorado's Extended Producer Responsibility (EPR) law must register with the Circular Action Alliance (CAA) by October 1, 2024. The deadline was established through the state's Producer Responsibility Regulations, Section 18.2.4(A)(1), and effective July 1, 2025, a producer shall not sell or distribute any products that use covered materials in the state unless the producer is participating in the program."},
+  {date:"2025-11-15",label:"California: Initial Producer Data Report",description:"First CAA reporting deadline for California producers to submit baseline product/material data (CY 2023). Used for plan development and fee estimation.",category:"producer",state:"CA",
+    source:"https://www.ropesgray.com/en/insights/viewpoints/102lr8q/producer-reporting-begins-under-californias-plastic-and-packaging-epr-law-less",sourceName:"Ropes & Gray",
+    citation:"California's EPR reporting window opened on September 22, 2025, with reports for 2023 data due November 15, 2025. The November 15 deadline is not a statutory or regulatory deadline under SB 54, and CalRecycle considers it to be voluntary, requested by CAA to support the development of its Producer Responsibility Plan and source reduction baseline reporting."},
+  {date:"2026-01-01",label:"Washington: Producers Must Appoint PRO",description:"Under the Recycling Reform Act, each producer of packaging/paper products must appoint a PRO by Jan 1, 2026.",category:"producer",state:"WA",
+    source:"https://www.ropesgray.com/en/insights/viewpoints/102lwez/producers-required-to-appoint-a-pro-under-washingtons-extended-producer-responsi",sourceName:"Ropes & Gray",
+    citation:"By January 1, 2026, each producer of packaging and paper products must appoint a producer responsibility organization (PRO). Following the appointment by January 1, 2026, producers must register with the PRO by February 15, 2026, and then be registered by the PRO with the Department of Ecology by March 1, 2026."},
+  {date:"2026-02-15",label:"Washington: CAA Registration Deadline (Extended)",description:"CAA initially requested producers register by Feb 15, 2026, but extended the deadline to Dec 15, 2026. The statutory producer registration deadline with any PRO remains Jul 1, 2026.",category:"producer",state:"WA",
+    source:"https://www.eprgroupconsulting.com/post/washington-epr-program-caa-february-15-registration-date",sourceName:"EPR Group Consulting",
+    citation:"The Circular Action Alliance (CAA), the producer responsibility organization for Washington's EPR program, expects producers to register by February 15, ahead of the March deadline for CAA to register itself with Ecology; however, July 1, 2026, is the statutory producer registration deadline. CAA requested producers to appoint it as the PRO by December 15."},
+  {date:"2026-05-01",label:"Maine: Producer Registration Opens",description:"Producers register with the newly contracted Stewardship Organization. Registration and 2025 packaging data submission due in May 2026.",category:"producer",state:"ME",
+    source:"https://www.maine.gov/dep/waste/recycle/epr.html",sourceName:"Maine DEP",
+    citation:"In May 2026, producers are required to register and report, with reporting limited to an estimate of total tons of packaging produced during calendar year 2025. The Department of Environmental Protection (DEP) expects to contract with a Stewardship Organization in April 2026, with producers required to register and report 2025 data in May."},
+  {date:"2026-07-01",label:"Maryland: Producer PRO Membership Deadline",description:"Producers must join an existing PRO or submit an individual compliance plan to MD Dept. of Environment by Jul 1, 2026.",category:"producer",state:"MD",
+    source:"https://www.bdlaw.com/publications/maryland-becomes-sixth-state-to-enact-packaging-extended-producer-responsibility-washington-expected-to-follow/",sourceName:"Beveridge & Diamond",
+    citation:"Maryland's SB 901 imposes obligations on producers of packaging and paper products, with implementation beginning July 1, 2026. The Maryland Department of the Environment (MDE) approved the Circular Action Alliance (CAA) as the state's PRO for EPR, and CAA must register with MDE by July 1, 2026."},
+  {date:"2026-07-01",label:"Washington: PRO Membership Deadline",description:"Firm legal deadline for producers to join a PRO. After Mar 2029, non-member producers face sales restrictions in WA.",category:"producer",state:"WA",
+    source:"https://ecology.wa.gov/waste-toxics/reducing-recycling-waste/our-recycling-programs/recycling-reform-act",sourceName:"WA Dept. of Ecology",
+    citation:"Producers must join a PRO by July 1, 2026. The July 1, 2026, deadline for PRO membership represents a firm legal requirement, and producers who miss this window face sales restrictions beginning March 2029. Prior to this deadline, a simplified report is due May 31, 2026, using 2025 data."},
+
+  // ── Producer requirements: Reporting ──
+  {date:"2025-07-31",label:"Colorado: First Supply Data Report Due",description:"Producers must report initial supply data to CAA by Jul 31, 2025. This data informs the 2026 fee rate schedule.",category:"producer",state:"CO",
+    source:"https://www.prnewswire.com/news-releases/producers-must-report-supply-data-to-caa-by-july-31-to-comply-with-colorados-packaging-epr-law-302514171.html",sourceName:"CAA via PR Newswire",
+    citation:"Producers selling packaging, paper products, and food serviceware into Colorado must report supply data to Circular Action Alliance (CAA) by July 31, 2025, to remain in compliance with the state's Extended Producer Responsibility (EPR) law. This data is essential to set the 2026 Colorado Producer Fee Rate Schedule."},
+  {date:"2026-05-31",label:"Oregon: 2025 Supply Report Due",description:"Producers submit CY 2025 supply data to CAA. Used to set 2027 producer fees and meet state reporting requirements.",category:"producer",state:"OR",
+    source:"https://circularactionalliance.org/producer-reporting",sourceName:"CAA Producer Reporting",
+    citation:"The next CAA reporting deadline, for 2025 supply data, is anticipated for May 31, 2026; it is an internal CAA deadline that will enable CAA to set producer fees for the 2027 program year and meet reporting requirements. This deadline applies across multiple EPR states as part of a harmonized reporting cycle."},
+  {date:"2026-05-31",label:"Colorado: 2025 Supply Report Due",description:"Producers submit CY 2025 supply data to CAA for Colorado's program.",category:"producer",state:"CO",
+    source:"https://cdphe.colorado.gov/hm/epr-program",sourceName:"Colorado DPHE",
+    citation:"Producers will submit a producer supply report using 2025 data by May 31, 2026. To remain compliant, companies must register with CAA and submit their detailed material supply reports by May 31, 2026, which will set the baseline for Colorado's 2027 program fees."},
+  {date:"2026-05-31",label:"California: Annual Supply Report Due",description:"Producers submit CY 2025 supply data to CAA. This data determines early fees (Aug 2026) and full 2027 program fees.",category:"producer",state:"CA",
+    source:"https://calrecycle.ca.gov/packaging/packaging-epr/",sourceName:"CalRecycle",
+    citation:"An Annual Supply Report using CY 2025 data and an Annual Source Reduction Report using CY 2025 data are both due May 31, 2026. Producers must submit a Producer Supply Report using CY 2025 data by May 31, 2026 for calculating 2027 EPR fees."},
+  {date:"2026-05-31",label:"Maine: 2025 Packaging Data Due",description:"Producers submit CY 2025 packaging data to the Stewardship Organization.",category:"producer",state:"ME",
+    source:"https://www.maine.gov/dep/waste/recycle/epr.html",sourceName:"Maine DEP",
+    citation:"Participant producers must register with the approved Stewardship Organization (SO) in May 2026, with reporting limited to an estimate of total tons of packaging produced during calendar year 2025. Producers required to register and report 2025 data by May 2026."},
+  {date:"2026-05-31",label:"Washington: Simplified Supply Report Due",description:"Producers submit a simplified report of CY 2025 supply data to CAA.",category:"producer",state:"WA",
+    source:"https://ecology.wa.gov/waste-toxics/reducing-recycling-waste/our-recycling-programs/recycling-reform-act",sourceName:"WA Dept. of Ecology",
+    citation:"Producers must report Calendar Year 2025 packaging data by May 31, 2026, which includes material weights, components, paper product categories, and WA sales volumes. This reporting requirement is part of Washington's packaging Extended Producer Responsibility law under the Recycling Reform Act (RCW 70A.208)."},
+
+  // ── Producer requirements: Fees & Payments ──
+  {date:"2026-01-01",label:"Colorado: First Fee Invoices Issued",description:"CAA issues first annual producer fee invoices for Colorado. Fees based on 2025 supply data reported by Jul 31, 2025.",category:"producer",state:"CO",
+    source:"https://cdphe.colorado.gov/hm/epr-program",sourceName:"Colorado DPHE",
+    citation:"Colorado's EPR plan officially took effect January 1st, marking the first year Colorado producers will pay mandatory responsibility fees based on the volume and classification of packaging. Invoices for fees to cover 2026 program operations began in early 2026."},
+  {date:"2026-01-01",label:"Oregon: Fee Invoices (Jan Cycle)",description:"CAA issues EPR fee invoices for Oregon producers. 50% due within 45 days; remaining 50% due Jul 30, 2026.",category:"producer",state:"OR",
+    source:"https://www.repurpose.global/blog/what-to-expect-from-2026-epr",sourceName:"Repurpose Global",
+    citation:"In Oregon, invoices will be issued twice: January 2026 and July 2026. Producers will pay full-year program fees based on their 2024 calendar-year supply data as part of Oregon's Extended Producer Responsibility (EPR) program structure."},
+  {date:"2026-02-15",label:"Oregon: First Fee Payment Due",description:"First half of Oregon 2026 program fees due (~45 days after Jan invoice). Noncompliance penalties up to $25,000/day.",category:"producer",state:"OR",
+    source:"https://www.repurpose.global/blog/what-to-expect-from-2026-epr",sourceName:"Repurpose Global",
+    citation:"Oregon fee invoices issued in mid-to-late January 2026 are part of the twice-yearly fee structure. Producers must check their producer portals or emails to authorized contacts for their 2026 invoices to ensure timely payment."},
+  {date:"2026-07-01",label:"Oregon: Fee Invoices (Jul Cycle)",description:"CAA issues second-cycle EPR fee invoices for Oregon producers.",category:"producer",state:"OR",
+    source:"https://www.repurpose.global/blog/what-to-expect-from-2026-epr",sourceName:"Repurpose Global",
+    citation:"Producers received their first invoices in July 2025, with the second round of invoices expected in July 2026 as part of Oregon's twice-yearly fee structure. Invoices will be issued twice: January 2026 and July 2026."},
+  {date:"2026-07-01",label:"Maine: Startup Fee Invoices",description:"Stewardship Organization invoices producers for startup registration fees to cover initial operational costs.",category:"producer",state:"ME",
+    source:"https://www.maine.gov/dep/waste/recycle/epr.html",sourceName:"Maine DEP",
+    citation:"In July 2026, the Stewardship Organization (SO) invoices producers for a start-up registration fee to cover operational costs during the initial start-up period. This relates to Maine's Extended Producer Responsibility (EPR) program for packaging."},
+  {date:"2026-07-30",label:"Oregon: Second Fee Payment Due",description:"Second half of Oregon 2026 program fees due to CAA.",category:"producer",state:"OR",
+    source:"https://www.repurpose.global/blog/what-to-expect-from-2026-epr",sourceName:"Repurpose Global",
+    citation:"Oregon's twice-yearly fee invoicing cycle continues in July 2026, with the second round of invoices expected in July 2026 as part of the state's Extended Producer Responsibility program fee structure."},
+  {date:"2026-08-01",label:"California: Early Fee Invoices Issued",description:"CAA issues first early-fee invoices to California producers based on CY 2025 supply data. These fund pre-program activities ahead of the full 2027 launch.",category:"producer",state:"CA",
+    source:"https://www.repurpose.global/blog/california-packaging-epr-reporting-requirements-2026-guide",sourceName:"Repurpose Global",
+    citation:"Early fees will be invoiced in August 2026 for California's Extended Producer Responsibility (EPR) program under SB 54. Early fees get calculated after the 2026 report (for 2025 data), and these early fees fund California's pre-program activities ahead of the full 2027 program launch."},
+  {date:"2026-09-01",label:"Maine: Startup Fee Payment Due",description:"Producers pay startup registration fee to the Stewardship Organization (no more than 180 days after the DEP contract effective date).",category:"producer",state:"ME",
+    source:"https://www.maine.gov/dep/waste/recycle/epr.html",sourceName:"Maine DEP",
+    citation:"Producers are required to pay the start-up registration fee by September 2026, which must occur no more than 180 days after the effective date of the DEP contract with the Stewardship Organization. This fee covers Maine's EPR program operational costs."},
+  {date:"2027-01-01",label:"Oregon: 2027 Fee Invoices",description:"CAA issues 2027 program year fee invoices for Oregon, based on CY 2025 supply data reported May 31, 2026.",category:"producer",state:"OR",
+    source:"https://www.oregon.gov/deq/recycling/pages/producers-of-covered-products.aspx",sourceName:"Oregon DEQ",
+    citation:"The next CAA reporting deadline for 2025 supply data is anticipated for May 31, 2026; it is an internal CAA deadline that will enable CAA to set producer fees for the 2027 program year. Oregon's fee structure continues with invoices issued for the 2027 program year beginning January 1, 2027."},
+  {date:"2027-01-01",label:"California: Full PRO Fees Begin",description:"California's full PRO fee obligations officially start. Producers must be approved to participate in the CAA plan.",category:"producer",state:"CA",
+    source:"https://calrecycle.ca.gov/packaging/packaging-epr/",sourceName:"CalRecycle",
+    citation:"Starting January 1, 2027, the PRO must remit $500 million per year to the California Department of Tax and Fee Administration to be deposited into the California Plastic Pollution Mitigation Fund. Producers must participate in an approved PRO plan by January 1, 2027, or they cannot sell, offer for sale, import, or distribute covered material in the state."},
+  {date:"2028-01-01",label:"Maryland: First Payments Expected",description:"Maryland EPR program fee payments anticipated to begin. Maryland has the most delayed implementation timeline among enacted states and uniquely allows multiple PROs and individual producer compliance plans.",category:"producer",state:"MD",
+    source:"https://www.dlapiper.com/en-us/insights/publications/2025/05/maryland-and-washington-enact-epr-laws",sourceName:"DLA Piper",
+    citation:"Maryland's SB 901 requires producers to begin assuming costs of local recycling programs by July 2028. The timeline shows producer PRO membership deadline is July 1, 2026, with fee obligations and payments to follow as the program implementation phases in through 2028."},
+];
+
+const today = new Date("2026-03-12");
+const isPast = d => new Date(d+"T00:00:00") <= today;
+const formatDate = d => new Date(d+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+
+// ── TABS ──
+let activeTab = "map";
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    activeTab = tab.dataset.tab;
+    document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t === tab));
+    document.getElementById("map-view").classList.toggle("hidden", activeTab !== "map");
+    document.getElementById("timeline-view").classList.toggle("hidden", activeTab !== "timeline");
+  });
+});
+
+// ── MAP ──
+const mapW = 920, mapH = 580;
+const projection = d3.geoAlbersUsa().scale(1150).translate([mapW/2, mapH/2]);
+const pathGen = d3.geoPath().projection(projection);
+
+const svg = d3.select("#map").append("svg")
+  .attr("viewBox", `0 0 ${mapW} ${mapH}`)
+  .style("width", "100%")
+  .style("height", "auto");
+
+// Define patterns for CAA states
+const defs = svg.append("defs");
+
+// CAA diagonal stripe pattern over blue
+const caaPat = defs.append("pattern")
+  .attr("id", "caa-pattern")
+  .attr("patternUnits", "userSpaceOnUse")
+  .attr("width", 8).attr("height", 8)
+  .attr("patternTransform", "rotate(45)");
+caaPat.append("rect").attr("width", 8).attr("height", 8).attr("fill", "#2563eb");
+caaPat.append("line").attr("x1",0).attr("y1",0).attr("x2",0).attr("y2",8)
+  .attr("stroke", "#16a34a").attr("stroke-width", 3);
+
+// Pending PRO pattern (blue with dotted overlay)
+const pendPat = defs.append("pattern")
+  .attr("id", "pending-pattern")
+  .attr("patternUnits", "userSpaceOnUse")
+  .attr("width", 6).attr("height", 6);
+pendPat.append("rect").attr("width", 6).attr("height", 6).attr("fill", "#2563eb");
+pendPat.append("circle").attr("cx", 3).attr("cy", 3).attr("r", 1).attr("fill", "rgba(255,255,255,0.35)");
+
+const stateGroup = svg.append("g");
+const labelGroup = svg.append("g");
+const tooltip = document.getElementById("tooltip");
+let selectedMapState = null;
+
+// Load US atlas TopoJSON
+d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json").then(us => {
+  const states = topojson.feature(us, us.objects.states);
+
+  // FIPS to state name
+  const fipsToName = {};
+  states.features.forEach(f => {
+    // us-atlas uses FIPS codes as IDs
+    const nameMap = {
+      "01":"Alabama","02":"Alaska","04":"Arizona","05":"Arkansas","06":"California",
+      "08":"Colorado","09":"Connecticut","10":"Delaware","11":"District of Columbia",
+      "12":"Florida","13":"Georgia","15":"Hawaii","16":"Idaho","17":"Illinois","18":"Indiana",
+      "19":"Iowa","20":"Kansas","21":"Kentucky","22":"Louisiana","23":"Maine","24":"Maryland",
+      "25":"Massachusetts","26":"Michigan","27":"Minnesota","28":"Mississippi","29":"Missouri",
+      "30":"Montana","31":"Nebraska","32":"Nevada","33":"New Hampshire","34":"New Jersey",
+      "35":"New Mexico","36":"New York","37":"North Carolina","38":"North Dakota","39":"Ohio",
+      "40":"Oklahoma","41":"Oregon","42":"Pennsylvania","44":"Rhode Island","45":"South Carolina",
+      "46":"South Dakota","47":"Tennessee","48":"Texas","49":"Utah","50":"Vermont","51":"Virginia",
+      "53":"Washington","54":"West Virginia","55":"Wisconsin","56":"Wyoming"
+    };
+    const id = String(f.id).padStart(2,"0");
+    f.properties.name = nameMap[id] || "";
+    f.properties.abbr = stateAbbrs[f.properties.name] || "";
+  });
+
+  // Draw state borders (mesh for clean outlines)
+  stateGroup.append("path")
+    .datum(topojson.mesh(us, us.objects.states, (a, b) => a !== b))
+    .attr("fill", "none")
+    .attr("stroke", "#cbd5e1")
+    .attr("stroke-width", 0.7)
+    .attr("stroke-linejoin", "round")
+    .attr("d", pathGen);
+
+  // Draw states
+  stateGroup.selectAll(".state-path")
+    .data(states.features.filter(f => f.properties.name))
+    .enter().append("path")
+    .attr("class", d => {
+      const epr = eprStates[d.properties.name];
+      return "state-path" + (epr ? " epr" : "");
+    })
+    .attr("d", pathGen)
+    .attr("fill", d => {
+      const epr = eprStates[d.properties.name];
+      if (!epr) return "#eef2f7";
+      if (epr.status === "enacted" && epr.pro === "caa") return "url(#caa-pattern)";
+      if (epr.status === "enacted" && epr.pro === "pending") return "url(#pending-pattern)";
+      return statusColors[epr.status].fill;
+    })
+    .attr("stroke", d => {
+      const epr = eprStates[d.properties.name];
+      if (!epr) return "#d1d8e0";
+      if (epr.pro === "caa") return "#15803d";
+      return statusColors[epr.status].hover;
+    })
+    .attr("stroke-width", d => {
+      const epr = eprStates[d.properties.name];
+      return (epr && epr.pro === "caa") ? 1.2 : 0.8;
+    })
+    .on("mouseenter", function(event, d) {
+      const epr = eprStates[d.properties.name];
+      if (!epr) return;
+      d3.select(this).attr("opacity", 0.82).attr("stroke-width", 2.5);
+      showTooltip(event, d.properties.name, epr);
+    })
+    .on("mousemove", function(event, d) {
+      const epr = eprStates[d.properties.name];
+      if (epr) positionTooltip(event);
+    })
+    .on("mouseleave", function(event, d) {
+      d3.select(this).attr("opacity", 1).attr("stroke-width", 0.8);
+      if (selectedMapState !== d.properties.name) hideTooltip();
+    })
+    .on("click", function(event, d) {
+      const epr = eprStates[d.properties.name];
+      if (!epr) return;
+      if (selectedMapState === d.properties.name) {
+        selectedMapState = null;
+        stateGroup.selectAll(".state-path").classed("selected", false);
+        hideTooltip();
+        highlightGridCard(null);
+      } else {
+        selectedMapState = d.properties.name;
+        stateGroup.selectAll(".state-path").classed("selected", false);
+        d3.select(this).classed("selected", true);
+        showTooltip(event, d.properties.name, epr);
+        highlightGridCard(d.properties.name);
+      }
+    });
+
+  // State labels (only for EPR states)
+  labelGroup.selectAll(".state-label")
+    .data(states.features.filter(f => eprStates[f.properties.name]))
+    .enter().append("text")
+    .attr("class", "state-label")
+    .attr("x", d => {
+      const centroid = pathGen.centroid(d);
+      // Nudge small states
+      const nudges = {"Rhode Island":14, "New Hampshire":8, "Maryland":12};
+      return centroid[0] + (nudges[d.properties.name] || 0);
+    })
+    .attr("y", d => {
+      const centroid = pathGen.centroid(d);
+      const nudges = {"Rhode Island":0, "New Hampshire":-6, "Maryland":8};
+      return centroid[1] + (nudges[d.properties.name] || 0) + 4;
+    })
+    .text(d => d.properties.abbr);
+});
+
+function showTooltip(event, name, epr) {
+  const sc = statusColors[epr.status];
+  const proBadge = epr.pro === "caa"
+    ? `<span style="display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;background:#dcfce7;color:#15803d;margin-left:4px">CAA</span>`
+    : epr.pro === "pending"
+    ? `<span style="display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;background:#fef9c3;color:#854d0e;margin-left:4px">PRO Pending</span>`
+    : "";
+  tooltip.innerHTML = `
+    <span class="tooltip-state" style="background:${sc.fill}">${epr.abbr}</span>${proBadge}
+    <div class="tooltip-title">${name} — ${epr.label}</div>
+    <div class="tooltip-detail">${epr.detail}</div>
+    <div style="font-size:11px;color:#64748b;margin-top:4px;font-style:italic">${epr.proNote}</div>
+  `;
+  tooltip.classList.add("visible");
+  positionTooltip(event);
+}
+function positionTooltip(event) {
+  const rect = document.querySelector(".map-container").getBoundingClientRect();
+  let x = event.clientX - rect.left + 16;
+  let y = event.clientY - rect.top - 10;
+  if (x + 280 > rect.width) x = x - 296;
+  if (y + 100 > rect.height) y = y - 80;
+  tooltip.style.left = x + "px";
+  tooltip.style.top = y + "px";
+}
+function hideTooltip() { tooltip.classList.remove("visible"); }
+
+// ── STATE GRID ──
+function buildStateGrid() {
+  const grid = document.getElementById("state-grid");
+  const sorted = Object.entries(eprStates).sort((a,b) => a[1].year - b[1].year);
+  grid.innerHTML = sorted.map(([name, info]) => {
+    const sc = statusColors[info.status];
+    const proBadge = info.pro === "caa"
+      ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:#dcfce7;color:#15803d;margin-left:auto">CAA</span>`
+      : info.pro === "pending"
+      ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:#fef9c3;color:#854d0e;margin-left:auto">PRO TBD</span>`
+      : "";
+    return `<div class="grid-card" data-state="${name}" style="--accent:${sc.fill};--accent-bg:${sc.bg}" onclick="toggleGridState('${name}')">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <span class="pill" style="background:${sc.fill}">${info.abbr}</span>
+        <span class="status" style="color:${sc.fill}">${info.label}</span>
+        ${proBadge}
+      </div>
+      <div class="detail">${info.detail}</div>
+      <div style="font-size:10px;color:#64748b;margin-top:3px;font-style:italic">${info.proNote}</div>
+    </div>`;
+  }).join("");
+}
+
+function toggleGridState(name) {
+  if (selectedMapState === name) {
+    selectedMapState = null;
+    highlightGridCard(null);
+    stateGroup.selectAll(".state-path").classed("selected", false);
+    hideTooltip();
+  } else {
+    selectedMapState = name;
+    highlightGridCard(name);
+    stateGroup.selectAll(".state-path").classed("selected", false)
+      .filter(d => d.properties.name === name).classed("selected", true);
+  }
+}
+
+function highlightGridCard(name) {
+  document.querySelectorAll(".grid-card").forEach(c => {
+    c.classList.toggle("selected", c.dataset.state === name);
+  });
+}
+
+buildStateGrid();
+
+// ── TIMELINE ──
+let activeFilter = "all";
+let selectedEventId = null;
+
+function buildFilters() {
+  const container = document.getElementById("filters");
+  const filters = [
+    {key:"all",label:"All Events",color:"#475569",bg:"#f1f5f9"},
+    ...Object.entries(categoryConfig).map(([k,v])=>({key:k,label:v.label,color:v.color,bg:v.bg}))
+  ];
+  container.innerHTML = filters.map(f =>
+    `<button class="filter-btn" data-filter="${f.key}" style="background:${activeFilter===f.key?f.color:f.bg};color:${activeFilter===f.key?'#fff':f.color}" onclick="setFilter('${f.key}')">${f.label}</button>`
+  ).join("");
+}
+
+function setFilter(f) {
+  activeFilter = f;
+  selectedEventId = null;
+  buildFilters();
+  buildTimeline();
+}
+
+function buildTimeline() {
+  const filtered = activeFilter === "all" ? events : events.filter(e => e.category === activeFilter);
+  const sorted = [...filtered].sort((a,b) => new Date(a.date+"T00:00:00") - new Date(b.date+"T00:00:00"));
+  const years = [...new Set(sorted.map(e => new Date(e.date+"T00:00:00").getFullYear()))].sort();
+
+  const upcomingCount = sorted.filter(e => !isPast(e.date)).length;
+  document.getElementById("upcoming-count").textContent = upcomingCount;
+  document.getElementById("upcoming-count2").textContent = upcomingCount;
+
+  const container = document.getElementById("timeline-content");
+  let html = "";
+
+  years.forEach(year => {
+    const yearEvents = sorted.filter(e => new Date(e.date+"T00:00:00").getFullYear() === year);
+    if (!yearEvents.length) return;
+    html += `<div class="year-section"><div class="year-header"><span class="year-label">${year}</span><div class="year-divider"></div><span class="year-count">${yearEvents.length} event${yearEvents.length>1?'s':''}</span></div><div class="timeline-track"><div class="timeline-line"></div>`;
+
+    yearEvents.forEach((event, i) => {
+      const config = categoryConfig[event.category];
+      const past = isPast(event.date);
+      const eid = `${year}-${i}`;
+      const isSelected = selectedEventId === eid;
+      const tagColor = stateTagColors[event.state] || "#64748b";
+
+      html += `<div class="event-item" onclick="toggleEvent('${eid}', event)">
+        <div class="event-dot ${past?'past':'future'}" style="border-color:${config.color};--dot-color:${config.color};${isSelected?`box-shadow:0 0 0 4px ${config.bg}`:''}"></div>
+        <div class="event-card${isSelected?' selected':''}" style="--card-accent:${config.color}40;${isSelected?`background:${config.bg}`:''}" >
+          <div class="event-meta">
+            <span class="event-state-pill" style="background:${tagColor}">${event.state}</span>
+            <span class="event-date">${formatDate(event.date)}</span>
+            ${!past?'<span class="event-upcoming">UPCOMING</span>':''}
+            <span class="event-category" style="background:${config.bg};color:${config.color}">${config.label}</span>
+          </div>
+          <div class="event-title">${event.label}</div>
+          ${isSelected?`<div class="event-desc">${event.description}${event.source?`<div style="margin-top:6px"><a href="${event.source}" target="_blank" rel="noopener" style="font-size:11px;color:#2563eb;text-decoration:none;font-weight:500" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Source: ${event.sourceName || 'View'} ↗</a></div>`:''}${event.citation?`<div class="event-citation"><span class="citation-label">From source:</span> ${event.citation}</div>`:''}</div>`:''}
+        </div>
+      </div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  container.innerHTML = html;
+}
+
+function toggleEvent(eid, evt) {
+  if (evt && evt.target.tagName === 'A') return; // don't toggle when clicking source link
+  selectedEventId = selectedEventId === eid ? null : eid;
+  buildTimeline();
+}
+
+buildFilters();
+buildTimeline();
+</script>
+</body>
+</html>
