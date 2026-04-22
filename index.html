@@ -109,7 +109,7 @@
     <div class="stats">
       <div class="stat-card" style="background:#dbeafe"><div class="stat-num" style="color:#2563eb">7</div><div class="stat-label" style="color:#1e40af">States with enacted EPR</div></div>
       <div class="stat-card" style="background:#f0fdf4"><div class="stat-num" style="color:#15803d">6</div><div class="stat-label" style="color:#166534">States with CAA as PRO</div></div>
-      <div class="stat-card" style="background:#fef3c7"><div class="stat-num" style="color:#d97706">5</div><div class="stat-label" style="color:#92400e">States with proposals</div></div>
+      <div class="stat-card" style="background:#fef3c7"><div class="stat-num" style="color:#d97706">7</div><div class="stat-label" style="color:#92400e">States with proposals</div></div>
       <div class="stat-card" style="background:#d1fae5"><div class="stat-num" style="color:#059669" id="upcoming-count">10</div><div class="stat-label" style="color:#065f46">Upcoming events</div></div>
     </div>
     <div class="map-container">
@@ -130,7 +130,7 @@
   <div id="timeline-view" class="hidden">
     <div class="filters" id="filters"></div>
     <div id="timeline-content"></div>
-    <div class="today-bar">Today: March 12, 2026 — <strong>7 states</strong> have enacted packaging EPR laws, with <strong id="upcoming-count2">10</strong> upcoming events</div>
+    <div class="today-bar">Today: April 21, 2026 — <strong>7 states</strong> have enacted packaging EPR laws, with <strong id="upcoming-count2">10</strong> upcoming events</div>
     <div class="bottom-legend">
       <span class="legend-item"><span class="dot-legend" style="background:#2563eb"></span> Law enacted</span>
       <span class="legend-item"><span class="dot-legend" style="background:#059669"></span> Milestone</span>
@@ -145,7 +145,7 @@
 <script>
 // ── DATA ──
 const eprStates = {
-  "Maine":          { abbr:"ME", status:"enacted",  year:2021, label:"Enacted 2021", detail:"First US state with packaging EPR. Full implementation by 2027.", pro:"pending", proNote:"CAA has applied; selection expected spring 2026" },
+  "Maine":          { abbr:"ME", status:"enacted",  year:2021, label:"Enacted 2021", detail:"First US state with packaging EPR. Full implementation by 2027.", pro:"pending", proNote:"CAA has applied; SO selection delayed past Apr 2026 target" },
   "Oregon":         { abbr:"OR", status:"enacted",  year:2021, label:"Enacted 2021", detail:"Program launched Jul 2025. Penalties up to $25K/day.", pro:"caa", proNote:"CAA is the designated PRO" },
   "Colorado":       { abbr:"CO", status:"enacted",  year:2022, label:"Enacted 2022", detail:"Fee payments began Jan 2026.", pro:"caa", proNote:"CAA is the designated PRO" },
   "California":     { abbr:"CA", status:"enacted",  year:2022, label:"Enacted 2022", detail:"SB 54 — most ambitious US EPR law. Full fees in 2027.", pro:"caa", proNote:"CAA is the designated PRO" },
@@ -156,6 +156,8 @@ const eprStates = {
   "New Hampshire":  { abbr:"NH", status:"proposed", year:2026, label:"Bill 2026",    detail:"EPR bill introduced in 2026 session.", pro:"none", proNote:"No PRO — legislation pending" },
   "Wisconsin":      { abbr:"WI", status:"proposed", year:2026, label:"Bill 2026",    detail:"EPR bill introduced in 2026 session.", pro:"none", proNote:"No PRO — legislation pending" },
   "Georgia":        { abbr:"GA", status:"proposed", year:2026, label:"Bill 2026",    detail:"HB 1237 introduced Feb 2026.", pro:"none", proNote:"No PRO — legislation pending" },
+  "Tennessee":      { abbr:"TN", status:"proposed", year:2025, label:"Bill 2025",    detail:"SB 269 / HB 600 Waste to Jobs Act. Sidelined 2026; coalition targets 2027.", pro:"none", proNote:"No PRO — legislation pending" },
+  "New Jersey":     { abbr:"NJ", status:"proposed", year:2026, label:"Bill 2026",    detail:"SB 614/SB 673 reintroduced Jan 2026. In committee.", pro:"none", proNote:"No PRO — legislation pending" },
   "New York":       { abbr:"NY", status:"proposed", year:2026, label:"Expected 2026",detail:"Packaging Reduction Act reintroduction planned.", pro:"none", proNote:"No PRO — legislation pending" },
 };
 
@@ -187,7 +189,7 @@ const categoryConfig = {
 const stateTagColors = {
   ME:"#6366f1",OR:"#ec4899",CA:"#f59e0b",CO:"#10b981",MN:"#8b5cf6",MD:"#ef4444",
   WA:"#06b6d4",GA:"#f97316",RI:"#84cc16",NH:"#14b8a6",WI:"#a855f7",NY:"#e11d48",
-  Multi:"#6b7280","MD/WA":"#64748b",
+  TN:"#0891b2",NJ:"#dc2626",Multi:"#6b7280","MD/WA":"#64748b",
 };
 
 const events = [
@@ -213,6 +215,9 @@ const events = [
   {date:"2025-05-17",label:"Washington EPR Law Enacted",description:"Washington signs the Recycling Reform Act (SB 5284). Full operations expected by 2030.",category:"enacted",state:"WA",
     source:"https://ecology.wa.gov/waste-toxics/reducing-recycling-waste/our-recycling-programs/recycling-reform-act",sourceName:"WA Dept. of Ecology",
     citation:"On May 17, 2025, Governor Bob Ferguson signed SB 5284, known as the Recycling Reform Act, into law—calling it the \"biggest overhaul of our recycling system in decades.\" Washington is now the seventh U.S. state to adopt a packaging extended producer responsibility (EPR) law."},
+  {date:"2026-04-07",label:"Oregon: Battery EPR Law Signed (HB 4144)",description:"Governor Kotek signs HB 4144, establishing EPR for portable and medium-format batteries (rechargeable and primary, ≤25 lbs). Bans disposal of removable lithium-ion batteries in mixed municipal waste. First PRO plan due Sep 1, 2028; producer participation by Jul 1, 2029. Oregon now has EPR for both packaging and batteries.",category:"enacted",state:"OR",
+    source:"https://resource-recycling.com/e-scrap/2026/04/10/oregons-battery-epr-bill-officially-charged-for-implementation/",sourceName:"Resource Recycling",
+    citation:"Oregon's battery EPR bill (HB 4144) was officially signed into law by Governor Tina Kotek on April 7, 2026. The law covers portable and medium-format batteries, requiring producers to participate in a battery PRO by July 1, 2029, with the first PRO plan due September 1, 2028."},
 
   // ── Proposed / Pre-EPR ──
   {date:"2025-06-30",label:"Rhode Island: Needs Assessment Law",description:"Rhode Island signs H 6207, requiring a statewide recycling needs assessment as a pre-EPR step. Report due Dec 1, 2026.",category:"proposed",state:"RI",
@@ -224,12 +229,18 @@ const events = [
   {date:"2025-12-17",label:"Wisconsin: EPR Bills Introduced",description:"Wisconsin introduces SB 778 / AB 772, creating a packaging reduction and recycling program with 10–50% packaging reduction targets over 10 years.",category:"proposed",state:"WI",
     source:"https://docs.legis.wisconsin.gov/2025/proposals/sb778",sourceName:"WI Legislature",
     citation:"In December 2025, the State Senate and Assembly both introduced identical packaging EPR bills (SB 778 and AB 772). Producers would be required to reduce the amount of packaging used by 10% after two years, increasing to 20% after four years, 30% after six years, 40% after eight years and 50% after 10 years."},
+  {date:"2025-01-14",label:"Tennessee: Waste to Jobs Act Introduced",description:"SB 269 / HB 600, the Tennessee Waste to Jobs Act, introduced by Sen. Heidi Campbell and Rep. Bob Freeman. Packaging EPR with opt-outs for businesses under $10M revenue and counties under 200K population. Senate committee recommended passage 8-1 (Mar 2026) but bill was sidelined from floor votes. Coalition vows to return 2027.",category:"proposed",state:"TN",
+    source:"https://www.packagingdive.com/news/tennessee-packaging-epr-waste-to-jobs-campbell/811847/",sourceName:"Packaging Dive",
+    citation:"SB 269, the Tennessee Waste to Jobs Act, was amended to address concerns of small businesses and small counties. The newest version allows businesses with under $10 million in annual revenue, as well as counties with fewer than 200,000 residents, to opt out of the EPR program. The bill was sidelined in February 2025 but sponsors vowed to return stronger in 2026."},
   {date:"2026-02-06",label:"Georgia: HB 1237 Introduced",description:"Georgia introduces the Pollution Prevention and Producer Responsibility Act of 2026, covering packaging, paper products, and beverage containers.",category:"proposed",state:"GA",
     source:"https://regask.com/georgia-house-bill-1237-proposes-extended-producer-responsibility-for-packaging-and-beverage-containers/",sourceName:"RegASK",
     citation:"Georgia District Rep. 75 Eric Bell, D-Jonesboro, recently introduced House Bill 1237, the Pollution Prevention and Producer Responsibility Act of 2026, which would establish a comprehensive producer responsibility framework for packaging, paper products and beverage containers."},
   {date:"2026-01-08",label:"New York: EPR Bill Reintroduced",description:"S1464 / A1749, the Packaging Reduction & Recycling Infrastructure Act, reintroduced. Passed Senate May 2025; stalled in Assembly as of Jan 2026.",category:"proposed",state:"NY",
     source:"https://www.nysenate.gov/legislation/bills/2025/S1464",sourceName:"NY Senate",
     citation:"S1464 was introduced in the New York State Senate on January 10, 2025, to enact the packaging reduction and recycling infrastructure act. The bill would cut single-use packaging waste by 30%, phase out some of the most toxic chemicals and materials in packaging, and shift costs off taxpayers and onto corporations."},
+  {date:"2026-01-01",label:"New Jersey: Packaging EPR Bills Reintroduced",description:"New Jersey reintroduces SB 614 (packaging EPR) and SB 673 (recyclability labeling). SB 614 would require 65% recycling rate by 2026 and all packaging compostable/recyclable by 2034. Bills remain in Senate Environment and Energy Committee; no advancement since Jan 2024 referral.",category:"proposed",state:"NJ",
+    source:"https://www.ppai.org/media-hub/10-states-to-watch-for-new-packaging-epr-laws-in-2026/",sourceName:"PPAI",
+    citation:"New Jersey has two active EPR and recyclability bills in the State Senate: SB 614 for packaging EPR and SB 673 for recyclability labeling. Both bills were reintroduced for the 2026 session but have not advanced beyond committee."},
   {date:"2026-01-15",label:"Massachusetts: EPR Commission Defers Packaging",description:"Massachusetts EPR Commission completes its report but recommends a two-year packaging EPR needs assessment before legislation. Endorsed EPR for paint, mattresses, batteries, and electronics. Packaging EPR legislation unlikely before 2028.",category:"proposed",state:"Multi",
     source:"https://www.packagingdive.com/news/massachusetts-epr-commission-packaging-needs-assessment/807640/",sourceName:"Packaging Dive",
     citation:"The Massachusetts EPR Commission recommended that the legislature appropriate the necessary resources to complete a needs assessment within two years of appropriation. This means Massachusetts is planning for a needs assessment before fully implementing packaging EPR legislation."},
@@ -244,7 +255,7 @@ const events = [
   {date:"2026-01-01",label:"Colorado: Program Plan Approved",description:"Colorado DPHE approved CAA's program plan on Dec 9, 2025, with fee obligations beginning Jan 1, 2026.",category:"milestone",state:"CO",
     source:"https://cdphe.colorado.gov/hm/epr-program",sourceName:"Colorado DPHE",
     citation:"On December 9, the Colorado Department of Public Health & Environment (CDPHE) approved Circular Action Alliance's five-year Program Plan to administer Colorado's extended producer responsibility (EPR) law as the designated producer responsibility organization for packaging and paper. (Source: Colorado DPHE/CAA announcement)"},
-  {date:"2026-02-06",label:"Oregon: Federal Court Issues Preliminary Injunction",description:"US District Court grants preliminary injunction to National Association of Wholesaler-Distributors (NAW), blocking EPR enforcement against NAW members. Court found 'serious questions' on Due Process and Dormant Commerce Clause. Non-NAW producers remain subject to full enforcement. Trial set Jul 13, 2026.",category:"milestone",state:"OR",
+  {date:"2026-02-06",label:"Oregon: Federal Court Issues Preliminary Injunction",description:"US District Court grants preliminary injunction to NAW, blocking EPR enforcement against its members. Court found 'serious questions' on Due Process and Dormant Commerce Clause. Non-NAW producers remain subject to full enforcement. On Apr 7, court blocked four additional groups (incl. AF&PA) from joining suit. Trial firmly set for Jul 13, 2026.",category:"milestone",state:"OR",
     source:"https://www.naw.org/naw-wins-preliminary-injunction-against-oregons-epr-law/",sourceName:"NAW",
     citation:"On February 6, 2026, the United States District Court for the District of Oregon granted a preliminary injunction preventing the Oregon Department of Environmental Quality (DEQ) from enforcing Oregon's Plastic Pollution and Recycling Modernization Act (RMA) against the National Association of Wholesaler-Distributors (NAW) and its members. (Source: NAW/DLA Piper)"},
   {date:"2026-02-26",label:"California: First Pharmaceutical EPR Enforcement",description:"CalRecycle files first-ever enforcement action under the Pharmaceutical and Sharps Waste Stewardship Act, seeking ~$3.4M in penalties against Drug Takeback Solutions Foundation for noncompliance. Signals aggressive enforcement posture as packaging EPR programs ramp up.",category:"milestone",state:"CA",
@@ -256,10 +267,16 @@ const events = [
   {date:"2026-03-04",label:"Washington: CAA Designated as PRO",description:"WA Dept. of Ecology announces Circular Action Alliance as the designated PRO for the Recycling Reform Act.",category:"milestone",state:"WA",
     source:"https://ecology.wa.gov/waste-toxics/reducing-recycling-waste/our-recycling-programs/recycling-reform-act",sourceName:"WA Dept. of Ecology",
     citation:"On March 4, 2026, the Washington Department of Ecology announced Circular Action Alliance (CAA) as the Producer Responsibility Organization (PRO) to lead the implementation of the Recycling Reform Act, the state's Extended Producer Responsibility (EPR) law for residential paper and product packaging. (Source: Washington Department of Ecology/CAA announcement)"},
+  {date:"2026-03-12",label:"Colorado: ILMA Files Constitutional Challenge",description:"Independent Lubricant Manufacturers Association (ILMA) files lawsuit against CDPHE challenging Colorado's EPR fees on constitutional and statutory grounds. Claims EPR fees of 56¢/gallon for packaged lubricants exceed profit margins, with inadequate due process and oversight. Second state-level EPR litigation after Oregon's NAW case.",category:"milestone",state:"CO",
+    source:"https://natlawreview.com/article/epr-litigation-expands-colorado-as-industry-targets-program-design",sourceName:"National Law Review",
+    citation:"ILMA filed a lawsuit against the Colorado Department of Public Health and Environment challenging the constitutionality and state statutory authority of Colorado's EPR program. The suit alleges EPR fees of 56 cents per gallon for packaged lubricants exceed profit margins, with inadequate due process and lack of meaningful oversight for fee payers."},
+  {date:"2026-03-17",label:"California: SB 343 Truth in Labeling Lawsuit Filed",description:"18 food industry groups file federal lawsuit challenging California's SB 343 (Truth in Labeling) on First Amendment grounds. Seek injunction before Oct 2026 enforcement date. SB 343 prohibits chasing-arrows symbols unless products meet CA-specific recycling criteria. Works in tandem with SB 54.",category:"milestone",state:"CA",
+    source:"https://natlawreview.com/article/industry-groups-challenge-constitutionality-californias-truth-labeling-law",sourceName:"National Law Review",
+    citation:"Eighteen food industry groups and trade associations filed a federal lawsuit on March 17, 2026, challenging the constitutionality of California's SB 343, the Truth in Labeling law. The plaintiffs seek a declaratory judgment and preliminary injunction to prevent enforcement, arguing the law violates First Amendment commercial speech protections."},
   {date:"2025-03-07",label:"California: Newsom Directs SB 54 Rulemaking Restart",description:"Governor Newsom orders CalRecycle to restart the SB 54 rulemaking process due to concerns about potential costs to small businesses and consumers. Draft EPR program language is rejected.",category:"milestone",state:"CA",
     source:"https://www.klgates.com/Updates-on-SB-54-CalRecycle-to-Take-a-Second-Stab-at-Implementing-Regulations-4-1-2025",sourceName:"K&L Gates",
     citation:"On March 7, 2025, Governor Gavin Newsom directed CalRecycle back to the drawing board on proposed regulations to implement SB 54, leading to a new rulemaking process."},
-  {date:"2026-01-09",label:"California: CalRecycle Withdraws SB 54 Draft Regulations",description:"CalRecycle officially withdraws proposed SB 54 regulations from the Office of Administrative Law for revisions, primarily around food and agricultural packaging clarity. A 15-day public comment period followed (Jan 29 – Feb 13, 2026). Statutory targets remain unchanged.",category:"milestone",state:"CA",
+  {date:"2026-01-09",label:"California: CalRecycle Withdraws SB 54 Draft Regulations",description:"CalRecycle withdrew proposed SB 54 regulations from OAL for revisions on food/agricultural packaging clarity. 15-day comment period Jan 29–Feb 13. Revised regs resubmitted to OAL on Mar 19, 2026; OAL decision due by May 1, 2026. Statutory targets remain unchanged.",category:"milestone",state:"CA",
     source:"https://resource-recycling.com/recycling/2026/01/12/calrecycle-withdraws-proposed-regs-for-sb-54/",sourceName:"Resource Recycling",
     citation:"On January 9, 2026, CalRecycle withdrew its proposed SB 54 regulations from the Office of Administrative Law's review. The agency plans to work on revisions to improve clarity, primarily around food and agricultural packaging, and will reopen a 15-day public comment period, but statutory deadlines will remain the same."},
   {date:"2027-01-01",label:"California: SB 54 Source Reduction Target — 10%",description:"SB 54 requires producers to reduce single-use plastic packaging and plastic food service ware by at least 10% (by weight) compared to the 2023 baseline. First enforceable source reduction milestone.",category:"milestone",state:"CA",
@@ -274,15 +291,15 @@ const events = [
   {date:"2032-01-01",label:"California: SB 54 Final Targets — 25% Reduction, 65% Recycling, 100% Recyclable/Compostable",description:"SB 54's ultimate deadline: 100% of single-use packaging and plastic food service ware must be recyclable or compostable. Plastic source reduction must reach 25% and recycling rate 65%. The most ambitious packaging sustainability mandate in the US.",category:"milestone",state:"CA",
     source:"https://calrecycle.ca.gov/packaging/packaging-epr/",sourceName:"CalRecycle",
     citation:"By 2032, SB 54 requires producers to ensure that 100% of single-use packaging and single-use plastic food service ware sold in the state is recyclable or compostable, 65% of single-use plastic packaging is recycled, and there is a 25% reduction compared to 2023."},
-  {date:"2026-04-01",label:"Maine: PRO Selection Expected",description:"Maine DEP expected to select and contract with a Stewardship Organization in spring 2026. CAA has applied and is widely expected to be selected.",category:"milestone",state:"ME",
+  {date:"2026-04-01",label:"Maine: SO Selection Expected (Delayed)",description:"Maine DEP targeted spring 2026 for Stewardship Organization selection. CAA has applied and is widely expected to be selected, but no announcement has been made as of Apr 21, 2026. Producer registration (May 2026) depends on this selection.",category:"milestone",state:"ME",
     source:"https://www.maine.gov/dep/waste/recycle/epr.html",sourceName:"Maine DEP",
     citation:"Maine's Department of Environmental Protection (DEP) expects to select and contract with a Stewardship Organization in April 2026. DEP anticipates that producers will need to register with and provide supply reports to the selected Stewardship Organization in May 2026. (Source: Maine DEP)"},
   {date:"2027-01-01",label:"Maine: Full Implementation Target",description:"Maine's statutory full-implementation date. In practice, implementation is phased: Mar 2027 municipal reports, May 2027 producer reports, Sep 2027 first producer payment, Oct 2027 first municipal reimbursement.",category:"milestone",state:"ME",
     source:"https://www.maine.gov/dep/waste/recycle/epr.html",sourceName:"Maine DEP",
     citation:"The program will be fully operational in 2027. Implementation is phased: municipalities report packaging managed in 2026 by March 2027, producers report by May 2027, first producer payment September 2027, and first municipal reimbursement October 2027."},
-  {date:"2026-08-01",label:"California: SB 54 Individual Source Reduction Plans Due",description:"Deadline for Individual Source Reduction Plans under SB 54. CalRecycle regulations remain unfinal after Jan 9, 2026 withdrawal; CAA program plan submission expected Jun 15, 2026, with 60-day public comment through Aug 13. Final regulations must be adopted before Jan 1, 2027 program launch.",category:"milestone",state:"CA",
-    source:"https://resource-recycling.com/recycling/2026/01/12/calrecycle-withdraws-proposed-regs-for-sb-54/",sourceName:"Resource Recycling",
-    citation:"CalRecycle withdrew proposed SB 54 regulations on January 9, 2026 for revisions focused on food and agricultural packaging. CAA will submit its program plan by June 15, 2026, with a 60-day public comment period through August 13, 2026. Final approval must occur by January 1, 2027."},
+  {date:"2026-08-01",label:"California: SB 54 Individual Source Reduction Plans Due",description:"Deadline for Individual Source Reduction Plans under SB 54. CalRecycle resubmitted revised regulations to OAL on Mar 19, 2026; OAL decision due by May 1, 2026. CAA program plan submission expected Jun 15, 2026, with 60-day public comment through Aug 13. Program launch target Jan 1, 2027.",category:"milestone",state:"CA",
+    source:"https://natlawreview.com/article/californias-packaging-epr-deadlines-are-approaching-what-producers-need-to-know-about",sourceName:"National Law Review",
+    citation:"CalRecycle resubmitted revised SB 54 regulations to the Office of Administrative Law on March 19, 2026, with a decision due by May 1, 2026. Individual Source Reduction Plans are due August 1, 2026. CAA will submit its program plan by June 15, 2026."},
   {date:"2028-10-01",label:"Minnesota: Stewardship Plan Due",description:"Minnesota's PRO must complete and submit its Stewardship Plan by Oct 1, 2028. Producers must then execute an agreement with the PRO by Jan 1, 2029 to continue selling covered materials.",category:"milestone",state:"MN",
     source:"https://www.pca.state.mn.us/air-water-land-climate/extended-producer-responsibility-for-packaging",sourceName:"Minnesota PCA",
     citation:"The Producer Responsibility Organization (PRO) must complete the stewardship plan by October 1, 2028. January 1, 2029 is when producers must have executed an agreement with the PRO to comply with an approved stewardship plan in order to continue to introduce covered materials. (Source: Minnesota PCA/Minnesota Statutes 115A.1443)"},
@@ -372,7 +389,7 @@ const events = [
     citation:"Maryland's SB 901 requires producers to begin assuming costs of local recycling programs by July 2028. The timeline shows producer PRO membership deadline is July 1, 2026, with fee obligations and payments to follow as the program implementation phases in through 2028."},
 ];
 
-const today = new Date("2026-03-12");
+const today = new Date("2026-04-21");
 const isPast = d => new Date(d+"T00:00:00") <= today;
 const formatDate = d => new Date(d+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
 
